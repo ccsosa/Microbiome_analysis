@@ -18,15 +18,22 @@
 #' print(paths$csv_dir)
 #' }
 
-init_directories <- function(dir = "~") {
+dir_function <- function(dir,marker){
   # Load or create main directory
   message("Loading or creating scripts dir")
+  
   SCRIPTS_dir <- paste0(dir, "/SCRIPTS")
   if (!dir.exists(SCRIPTS_dir)) dir.create(SCRIPTS_dir)
   
+  marker_dir <- marker
+  ("Loading or creating marker dir")
+  marker_dir <- paste0(dir, "/",marker_dir)
+  if (!dir.exists(marker_dir)) dir.create(marker_dir)
+  
+  
   # Create Outcomes dir
   message("Loading or creating outcomes dir")
-  out_dir <- paste0(dir, "/outcomes")
+  out_dir <- paste0(marker_dir, "/outcomes")
   if (!dir.exists(out_dir)) dir.create(out_dir)
   
   # Create subfolders inside Outcomes
@@ -40,7 +47,7 @@ init_directories <- function(dir = "~") {
   RDS_dir <- paste0(out_dir, "/rds_dir")
   if (!dir.exists(RDS_dir)) dir.create(RDS_dir)
   
-  # Return paths as a named list
+  # # Return paths as a named list
   return(list(
     SCRIPTS_dir = SCRIPTS_dir,
     out_dir = out_dir,
@@ -48,4 +55,6 @@ init_directories <- function(dir = "~") {
     csv_dir = csv_dir,
     RDS_dir = RDS_dir
   ))
+
 }
+ 
