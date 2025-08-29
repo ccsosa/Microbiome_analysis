@@ -238,15 +238,15 @@ write.csv(data.frame(sample_data(physeq4)),paste0(csv_dir, "/", "000_Sample_data
 ################################################################################
 #9.Obtaining rarefied phyloseq object. Two options:"iNEXT","ggrare"
 
-# if(!file.exists(paste0(RDS_dir, "/002_rarefied_PSD.RDS"))){
+if(!file.exists(paste0(RDS_dir, "/002_rarefied_PSD_4.RDS"))){
   # ps_rare <- accumulation_curve_function(physeq4, option = "iNEXT")
   # ps_rare2 <- accumulation_curve_function(physeq4, option = "plateau")
   ps_rare3 <- accumulation_curve_function(physeq4, option = "SRS")
   ps_rare <- ps_rare3
   
-# } else {
-#   ps_rare <- readRDS(paste0(RDS_dir, "/002_rarefied_PSD_4.RDS"))
-# }
+} else {
+   ps_rare <- readRDS(paste0(RDS_dir, "/002_rarefied_PSD_4.RDS"))
+ }
 ################################################################################
 ################################################################################
 ################################################################################
@@ -375,7 +375,7 @@ ggsave(
 ################################################################################
 #Using microbiome to transform in compositional (relative abundance to use in beta divesity)
 physeq_clr <- microbiome::transform(ps_rare, "compositional")
-physeq_clr2 <- microbiome::transform(ps_rare, "clr")
+physeq_clr2 <- microbiome::transform(physeq4, "clr")
 ################################################################################
 #Trying reggression of Alpha and diameter at breast height (DBH)
 
@@ -475,24 +475,24 @@ ggsave(
 ################################################################################
 ################################################################################
 #perform PERMANOVA
-##USING RAREFIED OBJECT
+##USING NO RAREFIED OBJECT + CLR
 # Additionally, our betadisper results are not significant,
 # meaning we cannot reject the null hypothesis that our groups have the same dispersions
 dist = phyloseq::distance(physeq_clr2, method="euclidean")
-metadata <- data.frame(sample_data(ps_rare))
+metadata <- data.frame(sample_data(physeq_clr2))
 test.adonis <- adonis2(dist ~ Fungi_system, data = metadata,permutations = 10000,parallel = T)
 test.adonis <- as.data.frame(test.adonis)
 test.adonis$interpretation <- NA
 if(test.adonis$`Pr(>F)`[1]<0.05){
   test.adonis$interpretation[1] <- "Differences of groups"  
 }
-write.csv(test.adonis,paste0(csv_dir,"/","004_PERMANOVA_RARE_CLR.csv"))
+write.csv(test.adonis,paste0(csv_dir,"/","004_PERMANOVA_CLR.csv"))
 aov_beta <- as.data.frame(anova(betadisper(dist, metadata$Fungi_system)))
 aov_beta$interpretation <- NA
 if(aov_beta$`Pr(>F)`[1]>0.05){
   aov_beta$interpretation[1] <- "No reject null hypothesis (same dispersions)"  
 }
-write.csv(aov_beta,paste0(csv_dir,"/","004_BETADISPERSER_RARE_CLR.csv"))
+write.csv(aov_beta,paste0(csv_dir,"/","004_BETADISPERSER_CLR.csv"))
 ################################################################################
 # #perform PERMANOVA
 # ##USING RAREFIED OBJECT
@@ -622,6 +622,7 @@ ggsave(
 #' ncores Number of CPU cores to use for parallel process
 #'
 p1 <-
+  
   Differential_abundant_taxa(
     physeq_obj = physeq_clr,
     level = "OTU",
@@ -662,12 +663,12 @@ p5 <-
 ################################################################################
 ################################################################################
 # Trying to get correlation per taxonomic level
-s_data <- sample_data(ps_rare)
+s_data <- sample_data(physeq4)
 
 #Removing samples without DBH values
 physeq_clr_select <-
   prune_samples(row.names(s_data[which(!is.na(s_data$DBH)# !is.na(s_data$Height)
-  )]),(physeq_clr))
+  )]),(physeq4))
 #formatting ? to NA
 physeq_clr_select <- tax_fix(physeq_clr_select, unknowns = c("?"))
 
@@ -678,12 +679,12 @@ levels_tax <- c("Order","Family","Genus","Species","OTU")
 cor_levels <- lapply(1:length(levels_tax),function(i){
   
   if(levels_tax[[i]]=="OTU"){
-    pF <- physeq_clr
+    pF <- physeq_clr_select
   } else {
     #Aggregating taxa
     pF <- tax_agg(ps = physeq_clr_select, levels_tax[[i]])
     #Transforming to compositional data
-    pF <- microbiome::transform(pF, "compositional")
+    pF <- microbiome::transform(pF, "clr")
     
   }
   #Performing correlations with FDR <0.05

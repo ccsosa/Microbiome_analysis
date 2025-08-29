@@ -1,25 +1,33 @@
-################################################################################
-#Load pacman to load complementary libraries
+#' @title Microbiome Comparative Analysis
+#' @description Script for comparing multiple microbial marker datasets across taxonomic levels using phyloseq objects. Includes diversity analysis, Jaccard similarity, and Venn diagram generation.
+#' @author Chrystian Sosa
+#' @keywords microbiome, phyloseq, diversity, jaccard, venn, visualization
+#' @import pacman phyloseq microbiome ggplot2 ggpubr xlsx readr dplyr compositions ggrepel iNEXT gridExtra ggsci UpSetR ggVennDiagram ggplotify aplot
+#' @importFrom microViz tax_fix tax_agg
+#' @importFrom microbiome transform
+#' @importFrom ggVennDiagram ggVennDiagram
+#' @importFrom ggplotify as.ggplot
+#' @importFrom ggplot2 ggsave ggtitle theme element_text element_blank
+#' @importFrom stats sd
+#' @importFrom utils read.csv write.csv
+#' @export
+
+#' @examples
+#' # Not intended to be run as a standalone example.
+#' # Source this file in a package or project where marker folders and paths exist.
+#' source("microbiome_comparative_analysis.R")
+
+#' @seealso \code{phyloseq}, \code{microViz}, \code{ggVennDiagram}
+
+# Load necessary packages using pacman
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 library(pacman)
 
-#Load libraries or install if it is the case from CRAN and github respetively
+# Load or install packages from CRAN and GitHub
 pacman::p_load(
-  phyloseq,
-  microbiome,
-  ggplot2,
-  ggpubr,
-  xlsx,
-  readr,
-  dplyr,
-  compositions,
-  ggrepel,
-  iNEXT,
-  gridExtra,
-  ggsci,
-  UpSetR,
-  ggVennDiagram,
-  ggplotify,
-  aplot
+  phyloseq, microbiome, ggplot2, ggpubr, xlsx, readr, dplyr,
+  compositions, ggrepel, iNEXT, gridExtra, ggsci, UpSetR, 
+  ggVennDiagram, ggplotify, aplot
 )
 pacman::p_load_gh(
   "gauravsk/ranacapa",
@@ -27,13 +35,20 @@ pacman::p_load_gh(
   "kasperskytte/ampvis2",
   "david-barnett/microViz@0.12.0",
   "thomasp85/patchwork"
-)#,"twbattaglia/btools")
-################################################################################
+)
+
+#' @title Jaccard index calculation
+#' @description Computes the Jaccard index between two sets.
+#' @param a First set (character vector)
+#' @param b Second set (character vector)
+#' @return Numeric Jaccard similarity
+#' @export
 jaccard <- function(a, b) {
-  intersection = length(intersect(a, b))
-  union = length(a) + length(b) - intersection
-  return (intersection/union)
+  intersection <- length(intersect(a, b))
+  union <- length(a) + length(b) - intersection
+  return(intersection / union)
 }
+
 ################################################################################
 #Loading scripts
 message("Loading complementary scripts")
@@ -67,8 +82,10 @@ physeq_list <- lapply(1:length(markers), function(i) {
   phy_i@sam_data$file <- markers[[i]]
   return(phy_i)
 })
-  
+
+#Create a Summary file with the original Phyloseq
 summary <- lapply(1:length(markers), function(i) {
+#Loading rarefied Phyloseq, Alpha, Beta, Threshold, counts
 phy_o <- readRDS(paths[[i]])
 phy_i <-   readRDS(paste0(dir, "/", markers[[i]], "/outcomes/rds_dir/002_rarefied_PSD_4.RDS"))
 Alpha_f <-read.csv(paste0(dir, "/", markers[[i]], "/outcomes/csv_dir/002_Alpha.csv"))
@@ -124,10 +141,11 @@ summary <- do.call(rbind,summary)
 write.csv(summary,paste0(dir, "/comparisons/SSU_summary.csv"),row.names = F)
 
 ################################################################################
+#Define levels
 levels <-
   c("Order","Family", "Genus", "Species", "OTU")
 
-
+#Create Jaccard
 x_jacc <- lapply(1:length(levels), function(i) {
   
   level <- levels[[i]]
